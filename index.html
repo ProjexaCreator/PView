@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title></title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#fff;font-family:Arial,Helvetica,sans-serif;color:#111}
+.wrap{max-width:900px;margin:0 auto;padding:28px 18px}
+input{width:100%;height:52px;border:1px solid #ccc;border-radius:9px;padding:0 15px;font-size:17px;outline:none;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+input:focus{border-color:#888}
+#results{margin-top:14px}
+.item{padding:16px 0;border-bottom:1px solid #ddd}
+.grid{display:grid;grid-template-columns:minmax(150px,1fr) minmax(220px,2fr);gap:10px 24px;align-items:start}
+.field{min-width:0}
+.label{font-size:11px;font-weight:700;color:#777;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.value{font-size:15px;line-height:1.45;word-break:break-word}
+.model .value{font-size:17px;font-weight:700}
+.pricebox{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px}
+.pricing-section{margin-top:12px;border:1px solid #dedede;border-radius:9px;overflow:hidden;background:#fff}
+.section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 11px;border-bottom:1px solid #e5e5e5;background:#f6f6f6}
+.section-title span{font-size:11px;font-weight:800;letter-spacing:.07em;color:#444}
+.section-title small{font-size:11px;color:#888;font-weight:400}
+.cash-section{border-color:#d9d9d9}
+.card-section{border-color:#cfcfcf;background:#fbfbfb}
+.card-section .section-title{background:#f1f1f1}
+.cash-grid{grid-template-columns:1fr 1fr 1fr;margin:0;padding:10px}
+.cash-grid .pricecell{background:#fff}
+.cash-grid .cash-highlight{background:#f7f7f7}
+.price-main{font-weight:700}
+.card-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px}
+.card-option{min-width:0;padding:10px 11px;border:1px solid #e0e0e0;border-radius:7px;background:#fff}
+.card-retail{font-size:16px;font-weight:700}
+.card-note{font-size:12px;color:#777;margin-top:2px;line-height:1.4}
+.muted-value{color:#777}
+
+.pricecell{padding:9px 11px;border:1px solid #e1e1e1;border-radius:7px;background:#fafafa}
+.cardbox{margin-top:10px;padding:9px 11px;border:1px solid #e1e1e1;border-radius:7px}
+.installbox{margin-top:8px;padding:9px 11px;border:1px solid #e1e1e1;border-radius:7px}
+.descbox{margin-top:10px}
+@media(max-width:650px){
+ .grid{grid-template-columns:1fr;gap:9px}
+ .pricebox{grid-template-columns:1fr}
+}
+.brand{font-size:12px;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:3px}
+.model{font-size:17px;font-weight:700}
+.price{font-size:15px;margin-top:5px;line-height:1.5}
+.cash{font-size:15px;font-weight:700;margin-top:2px;line-height:1.5}
+.discount{font-size:12px;color:#666;margin-top:1px;line-height:1.4}
+.card{font-size:14px;margin-top:6px;line-height:1.5}
+.installment{font-size:14px;font-weight:700;margin-top:2px;line-height:1.5}
+.installment-note{font-size:12px;color:#666;margin-top:1px;line-height:1.4}
+.desc{font-size:14px;color:#555;margin-top:4px;line-height:1.4}
+mark{background:#fff0a6}
+.empty{color:#777;padding:20px 2px}
+
+#lock{position:fixed;inset:0;background:#fff;display:flex;align-items:center;justify-content:center;padding:20px;z-index:9999}
+.lockbox{width:100%;max-width:360px;text-align:center}.lockbox h2{font-size:20px;margin:0 0 8px}.lockbox p{font-size:13px;color:#777;margin:0 0 18px}.lockbox input{margin-bottom:10px}.lockbox button{width:100%;height:48px;border:0;border-radius:9px;background:#111;color:#fff;font-size:15px;cursor:pointer}.lockerr{display:none;color:#b00020;font-size:12px;margin-top:9px}
+</style>
+</head>
+<body>
+<div id="lock">
+  <div class="lockbox">
+    <h2>Access Code</h2>
+    <p>Enter the access code to continue.</p>
+    <input id="accessCode" type="password" inputmode="numeric" autocomplete="off" placeholder="Access code">
+    <button id="unlock">Enter</button>
+    <div id="lockerr" class="lockerr">Incorrect access code.</div>
+  </div>
+</div>
+<div class="wrap">
+  <input id="search" type="text" autocomplete="off" spellcheck="false" placeholder="Search...">
+  <div id="results"></div>
+</div>
+<script src="data.js"></script>
+<script>
+(function(){
+  const CODE='0131';
+  const lock=document.getElementById('lock');
+  const codeInput=document.getElementById('accessCode');
+  const unlock=document.getElementById('unlock');
+  const err=document.getElementById('lockerr');
+  function check(){
+    if(codeInput.value===CODE){lock.style.display='none';codeInput.value='';}
+    else {err.style.display='block';codeInput.select();}
+  }
+  unlock.addEventListener('click',check);
+  codeInput.addEventListener('keydown',e=>{if(e.key==='Enter')check();});
+})();
+(function(){
+  const input=document.getElementById('search');
+  const results=document.getElementById('results');
+  const data=Array.isArray(window.PRICE_DATA)?window.PRICE_DATA:[];
+
+  function esc(s){
+    return String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+  function mark(s,q){
+    let text=esc(s);
+    if(!q) return text;
+    const safe=q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    return text.replace(new RegExp(safe,'ig'),m=>'<mark>'+m+'</mark>');
+  }
+  function render(){
+    const q=input.value.trim();
+    if(!q){results.innerHTML='';return;}
+    const terms=q.toLowerCase().split(/\s+/).filter(Boolean);
+    const matches=data.filter(r=>{
+      const hay=[r.brand,r.model,r.price,r.description].join(' ').toLowerCase();
+      return terms.every(t=>hay.includes(t));
+    });
+    if(!matches.length){
+      results.innerHTML='<div class="empty">No match found.</div>';
+      return;
+    }
+    results.innerHTML=matches.map(r=>`
+      <div class="item">
+        <div class="grid">
+          <div class="field">
+            <div class="label">Brand</div>
+            <div class="value">${mark(r.brand,q)}</div>
+          </div>
+          <div class="field model">
+            <div class="label">Model</div>
+            <div class="value">${mark(r.model,q)}</div>
+          </div>
+        </div>
+
+        ${r.retail_price_php!==null && r.retail_price_php!==undefined ? `
+          <section class="pricing-section cash-section">
+            <div class="section-title"><span>CASH PRICE</span><small>Cash payment</small></div>
+            <div class="pricebox cash-grid">
+              <div class="pricecell">
+                <div class="label">PHP Retail Price</div>
+                <div class="value price-main">₱${Number(r.retail_price_php).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+              </div>
+              <div class="pricecell">
+                <div class="label">Cash Discount</div>
+                <div class="value">${r.cash_discount_rate>0 ? Number(r.cash_discount_rate*100).toFixed(0)+'% • Cash only' : 'None below ₱2,999.00'}</div>
+              </div>
+              <div class="pricecell cash-highlight">
+                <div class="label">Cash Price</div>
+                <div class="value price-main">${r.cash_discount_rate>0 ? '₱'+Number(r.cash_price_php).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2}) : '₱'+Number(r.retail_price_php).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="pricing-section card-section">
+            <div class="section-title"><span>CARD TRANSACTION</span><small>Retail price only</small></div>
+            <div class="card-grid">
+              <div class="card-option">
+                <div class="label">Straight Debit &amp; Credit</div>
+                <div class="value card-retail">₱${Number(r.retail_price_php).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+                <div class="card-note">Retail Price Only</div>
+              </div>
+              ${r.installment_options && r.installment_options.length ? `
+                <div class="card-option">
+                  <div class="label">Card Installment</div>
+                  <div class="value"><b>${r.installment_options.join(' / ')} months</b></div>
+                  <div class="card-note">BPI • EastWest • UnionBank</div>
+                </div>
+              ` : `
+                <div class="card-option">
+                  <div class="label">Card Installment</div>
+                  <div class="value muted-value">Not available</div>
+                  <div class="card-note">No installment terms listed</div>
+                </div>
+              `}
+            </div>
+          </section>
+
+          ${r.description ? `
+            <div class="descbox">
+              <div class="label">Description</div>
+              <div class="value">${mark(r.description,q)}</div>
+            </div>
+          ` : ''}
+        ` : (r.price?`<div class="pricebox"><div class="pricecell"><div class="label">Price</div><div class="value">${mark(r.price,q)}</div></div></div>`:'')}
+      </div>`).join('');
+  }
+  input.addEventListener('input',render);
+})();
+</script>
+</body>
+</html>
